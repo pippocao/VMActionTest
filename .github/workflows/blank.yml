@@ -1,4 +1,4 @@
-name: AArch64 BSD RSA Keygen Performance Comparison
+name: BSD RSA Keygen Performance Comparison (aarch64 vs amd64)
 
 on:
   workflow_dispatch:
@@ -9,7 +9,7 @@ jobs:
     name: FreeBSD aarch64 RSA keygen
     steps:
       - uses: actions/checkout@v4
-      - name: Run keygen benchmark (FreeBSD)
+      - name: Run keygen benchmark (FreeBSD aarch64)
         uses: vmactions/freebsd-vm@v1
         with:
           arch: aarch64
@@ -29,7 +29,7 @@ jobs:
             ssh -V || true
             echo
 
-            RESULTS=results_freebsd.txt
+            RESULTS=results_freebsd_aarch64.txt
             : > "$RESULTS"
 
             for bits in $SIZES; do
@@ -54,14 +54,66 @@ jobs:
             echo
             echo "=== Aggregated (CSV-like) ==="
             cat "$RESULTS"
-            echo "=== Done FreeBSD ==="
+            echo "=== Done FreeBSD aarch64 ==="
+
+  freebsd-amd64-keygen:
+    runs-on: ubuntu-latest
+    name: FreeBSD amd64 RSA keygen
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run keygen benchmark (FreeBSD amd64)
+        uses: vmactions/freebsd-vm@v1
+        with:
+          arch: x86_64
+          usesh: true
+          mem: 8192
+          run: |
+            set -eu
+            SIZES="${SIZES:-4096 8192}"
+            ITER_RSA_SSH="${ITER_RSA_SSH:-3}"
+            ITER_RSA_OPENSSL="${ITER_RSA_OPENSSL:-3}"
+
+            echo "=== FreeBSD amd64 RSA Keygen Benchmark ==="
+            uname -a || true
+            sysctl hw.model || true
+            sysctl hw.ncpu || true
+            openssl version || true
+            ssh -V || true
+            echo
+
+            RESULTS=results_freebsd_amd64.txt
+            : > "$RESULTS"
+
+            for bits in $SIZES; do
+              echo "--- Size: $bits (ssh-keygen) ---"
+              for i in $(seq 1 "$ITER_RSA_SSH"); do
+                START=$(date +%s)
+                (time ssh-keygen -t rsa -b "$bits" -N "" -f "id_rsa_${bits}_${i}" -q -E md5) 2>&1 | sed 's/^/  [ssh-keygen] /'
+                END=$(date +%s)
+                echo "ssh-keygen,$bits,$i,$((END-START))s" >> "$RESULTS"
+                rm -f "id_rsa_${bits}_${i}" "id_rsa_${bits}_${i}.pub"
+              done
+              echo "--- Size: $bits (openssl) ---"
+              for i in $(seq 1 "$ITER_RSA_OPENSSL"); do
+                START=$(date +%s)
+                (time sh -c 'openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:'"$bits"' -out rsa_'"$bits"'_'"$i"'.pem 2>/dev/null || openssl genrsa '"$bits"' > rsa_'"$bits"'_'"$i"'.pem') 2>&1 | sed 's/^/  [openssl] /'
+                END=$(date +%s)
+                echo "openssl,$bits,$i,$((END-START))s" >> "$RESULTS"
+                rm -f "rsa_${bits}_${i}.pem"
+              done
+            done
+
+            echo
+            echo "=== Aggregated (CSV-like) ==="
+            cat "$RESULTS"
+            echo "=== Done FreeBSD amd64 ==="
 
   openbsd-arm64-keygen:
     runs-on: ubuntu-latest
     name: OpenBSD aarch64 RSA keygen
     steps:
       - uses: actions/checkout@v4
-      - name: Run keygen benchmark (OpenBSD)
+      - name: Run keygen benchmark (OpenBSD aarch64)
         uses: vmactions/openbsd-vm@v1
         with:
           arch: aarch64
@@ -81,7 +133,7 @@ jobs:
             ssh -V || true
             echo
 
-            RESULTS=results_openbsd.txt
+            RESULTS=results_openbsd_aarch64.txt
             : > "$RESULTS"
 
             for bits in $SIZES; do
@@ -106,14 +158,66 @@ jobs:
             echo
             echo "=== Aggregated (CSV-like) ==="
             cat "$RESULTS"
-            echo "=== Done OpenBSD ==="
+            echo "=== Done OpenBSD aarch64 ==="
+
+  openbsd-amd64-keygen:
+    runs-on: ubuntu-latest
+    name: OpenBSD amd64 RSA keygen
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run keygen benchmark (OpenBSD amd64)
+        uses: vmactions/openbsd-vm@v1
+        with:
+          arch: x86_64
+          usesh: true
+          mem: 8192
+          run: |
+            set -eu
+            SIZES="${SIZES:-4096 8192}"
+            ITER_RSA_SSH="${ITER_RSA_SSH:-3}"
+            ITER_RSA_OPENSSL="${ITER_RSA_OPENSSL:-3}"
+
+            echo "=== OpenBSD amd64 RSA Keygen Benchmark ==="
+            uname -a || true
+            sysctl hw.model || true
+            sysctl hw.ncpu || true
+            openssl version || true
+            ssh -V || true
+            echo
+
+            RESULTS=results_openbsd_amd64.txt
+            : > "$RESULTS"
+
+            for bits in $SIZES; do
+              echo "--- Size: $bits (ssh-keygen) ---"
+              for i in $(seq 1 "$ITER_RSA_SSH"); do
+                START=$(date +%s)
+                (time ssh-keygen -t rsa -b "$bits" -N "" -f "id_rsa_${bits}_${i}" -q -E md5) 2>&1 | sed 's/^/  [ssh-keygen] /'
+                END=$(date +%s)
+                echo "ssh-keygen,$bits,$i,$((END-START))s" >> "$RESULTS"
+                rm -f "id_rsa_${bits}_${i}" "id_rsa_${bits}_${i}.pub"
+              done
+              echo "--- Size: $bits (openssl) ---"
+              for i in $(seq 1 "$ITER_RSA_OPENSSL"); do
+                START=$(date +%s)
+                (time sh -c 'openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:'"$bits"' -out rsa_'"$bits"'_'"$i"'.pem 2>/dev/null || openssl genrsa '"$bits"' > rsa_'"$bits"'_'"$i"'.pem') 2>&1 | sed 's/^/  [openssl] /'
+                END=$(date +%s)
+                echo "openssl,$bits,$i,$((END-START))s" >> "$RESULTS"
+                rm -f "rsa_${bits}_${i}.pem"
+              done
+            done
+
+            echo
+            echo "=== Aggregated (CSV-like) ==="
+            cat "$RESULTS"
+            echo "=== Done OpenBSD amd64 ==="
 
   netbsd-arm64-keygen:
     runs-on: ubuntu-latest
     name: NetBSD 10.1 aarch64 RSA keygen
     steps:
       - uses: actions/checkout@v4
-      - name: Run keygen benchmark (NetBSD)
+      - name: Run keygen benchmark (NetBSD aarch64)
         uses: vmactions/netbsd-vm@v1
         with:
           arch: aarch64
@@ -134,7 +238,7 @@ jobs:
             ssh -V || true
             echo
 
-            RESULTS=results_netbsd.txt
+            RESULTS=results_netbsd_aarch64.txt
             : > "$RESULTS"
 
             for bits in $SIZES; do
@@ -159,4 +263,57 @@ jobs:
             echo
             echo "=== Aggregated (CSV-like) ==="
             cat "$RESULTS"
-            echo "=== Done NetBSD ==="
+            echo "=== Done NetBSD aarch64 ==="
+
+  netbsd-amd64-keygen:
+    runs-on: ubuntu-latest
+    name: NetBSD 10.1 amd64 RSA keygen
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run keygen benchmark (NetBSD amd64)
+        uses: vmactions/netbsd-vm@v1
+        with:
+          arch: x86_64
+          usesh: true
+          mem: 8192
+          release: "10.1"
+          run: |
+            set -eu
+            SIZES="${SIZES:-4096 8192}"
+            ITER_RSA_SSH="${ITER_RSA_SSH:-3}"
+            ITER_RSA_OPENSSL="${ITER_RSA_OPENSSL:-3}"
+
+            echo "=== NetBSD 10.1 amd64 RSA Keygen Benchmark ==="
+            uname -a || true
+            sysctl hw.model || true
+            sysctl hw.ncpu || true
+            openssl version || true
+            ssh -V || true
+            echo
+
+            RESULTS=results_netbsd_amd64.txt
+            : > "$RESULTS"
+
+            for bits in $SIZES; do
+              echo "--- Size: $bits (ssh-keygen) ---"
+              for i in $(seq 1 "$ITER_RSA_SSH"); do
+                START=$(date +%s)
+                (time ssh-keygen -t rsa -b "$bits" -N "" -f "id_rsa_${bits}_${i}" -q -E md5) 2>&1 | sed 's/^/  [ssh-keygen] /'
+                END=$(date +%s)
+                echo "ssh-keygen,$bits,$i,$((END-START))s" >> "$RESULTS"
+                rm -f "id_rsa_${bits}_${i}" "id_rsa_${bits}_${i}.pub"
+              done
+              echo "--- Size: $bits (openssl) ---"
+              for i in $(seq 1 "$ITER_RSA_OPENSSL"); do
+                START=$(date +%s)
+                (time sh -c 'openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:'"$bits"' -out rsa_'"$bits"'_'"$i"'.pem 2>/dev/null || openssl genrsa '"$bits"' > rsa_'"$bits"'_'"$i"'.pem') 2>&1 | sed 's/^/  [openssl] /'
+                END=$(date +%s)
+                echo "openssl,$bits,$i,$((END-START))s" >> "$RESULTS"
+                rm -f "rsa_${bits}_${i}.pem"
+              done
+            done
+
+            echo
+            echo "=== Aggregated (CSV-like) ==="
+            cat "$RESULTS"
+            echo "=== Done NetBSD amd64 ==="
