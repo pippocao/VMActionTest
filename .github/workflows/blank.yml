@@ -4,6 +4,101 @@ on:
   workflow_dispatch:
 
 jobs:
+  ubuntu-arm64-keygen:
+    runs-on: ubuntu-24.04-arm
+    name: ubuntu arm64 RSA keygen
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run keygen benchmark (Ubuntu amd64)
+        run: |
+          set -eu
+          SIZES="${SIZES:-4096 8192}"
+          ITER_RSA_SSH="${ITER_RSA_SSH:-3}"
+          ITER_RSA_OPENSSL="${ITER_RSA_OPENSSL:-3}"
+
+          echo "=== Ubuntu aarch64 RSA Keygen Benchmark ==="
+          uname -a || true
+          sysctl hw.model || true
+          sysctl hw.ncpu || true
+          openssl version || true
+          ssh -V || true
+          echo
+
+          RESULTS=results_ubuntu_aarch64.txt
+          : > "$RESULTS"
+
+          for bits in $SIZES; do
+            echo "--- Size: $bits (ssh-keygen) ---"
+            for i in $(seq 1 "$ITER_RSA_SSH"); do
+              START=$(date +%s)
+              (time ssh-keygen -t rsa -b "$bits" -N "" -f "id_rsa_${bits}_${i}" -q -E md5) 2>&1 | sed 's/^/  [ssh-keygen] /'
+              END=$(date +%s)
+              echo "ssh-keygen,$bits,$i,$((END-START))s" >> "$RESULTS"
+              rm -f "id_rsa_${bits}_${i}" "id_rsa_${bits}_${i}.pub"
+            done
+            echo "--- Size: $bits (openssl) ---"
+            for i in $(seq 1 "$ITER_RSA_OPENSSL"); do
+              START=$(date +%s)
+              (time sh -c 'openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:'"$bits"' -out rsa_'"$bits"'_'"$i"'.pem 2>/dev/null || openssl genrsa '"$bits"' > rsa_'"$bits"'_'"$i"'.pem') 2>&1 | sed 's/^/  [openssl] /'
+              END=$(date +%s)
+              echo "openssl,$bits,$i,$((END-START))s" >> "$RESULTS"
+              rm -f "rsa_${bits}_${i}.pem"
+            done
+          done
+
+          echo
+          echo "=== Aggregated (CSV-like) ==="
+          cat "$RESULTS"
+          echo "=== Done Ubuntu aarch64 ==="
+
+  ubuntu-amd64-keygen:
+    runs-on: ubuntu-latest
+    name: ubuntu amd64 RSA keygen
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run keygen benchmark (Ubuntu amd64)
+        run: |
+          set -eu
+          SIZES="${SIZES:-4096 8192}"
+          ITER_RSA_SSH="${ITER_RSA_SSH:-3}"
+          ITER_RSA_OPENSSL="${ITER_RSA_OPENSSL:-3}"
+
+          echo "=== Ubuntu amd64 RSA Keygen Benchmark ==="
+          uname -a || true
+          sysctl hw.model || true
+          sysctl hw.ncpu || true
+          openssl version || true
+          ssh -V || true
+          echo
+
+          RESULTS=results_ubuntu_amd64.txt
+          : > "$RESULTS"
+
+          for bits in $SIZES; do
+            echo "--- Size: $bits (ssh-keygen) ---"
+            for i in $(seq 1 "$ITER_RSA_SSH"); do
+              START=$(date +%s)
+              (time ssh-keygen -t rsa -b "$bits" -N "" -f "id_rsa_${bits}_${i}" -q -E md5) 2>&1 | sed 's/^/  [ssh-keygen] /'
+              END=$(date +%s)
+              echo "ssh-keygen,$bits,$i,$((END-START))s" >> "$RESULTS"
+              rm -f "id_rsa_${bits}_${i}" "id_rsa_${bits}_${i}.pub"
+            done
+            echo "--- Size: $bits (openssl) ---"
+            for i in $(seq 1 "$ITER_RSA_OPENSSL"); do
+              START=$(date +%s)
+              (time sh -c 'openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:'"$bits"' -out rsa_'"$bits"'_'"$i"'.pem 2>/dev/null || openssl genrsa '"$bits"' > rsa_'"$bits"'_'"$i"'.pem') 2>&1 | sed 's/^/  [openssl] /'
+              END=$(date +%s)
+              echo "openssl,$bits,$i,$((END-START))s" >> "$RESULTS"
+              rm -f "rsa_${bits}_${i}.pem"
+            done
+          done
+
+          echo
+          echo "=== Aggregated (CSV-like) ==="
+          cat "$RESULTS"
+          echo "=== Done Ubuntu amd64 ==="
+
+
   freebsd-arm64-keygen:
     runs-on: ubuntu-latest
     name: FreeBSD aarch64 RSA keygen
