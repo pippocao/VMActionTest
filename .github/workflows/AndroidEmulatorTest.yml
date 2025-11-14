@@ -6,7 +6,7 @@ on:
 
 jobs:
   armv7:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04-arm
     strategy:
       matrix:
         api-level: [21, 23, 29]
@@ -40,6 +40,7 @@ jobs:
           force-avd-creation: false
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
           disable-animations: false
+          arch: arm64-v8a
           script: echo "Generated AVD snapshot for caching."
 
       - name: run tests
@@ -49,6 +50,6 @@ jobs:
           force-avd-creation: false
           emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
           disable-animations: true
+          arch: arm64-v8a
           script: |
             adb devices
-            adb shell ls /usr/local/bin
