@@ -6,7 +6,7 @@ on:
 
 jobs:
   test_x86:
-    runs-on: ubuntu-latest
+    runs-on: macOS-11
     steps:
       - name: checkout
         uses: actions/checkout@v4
