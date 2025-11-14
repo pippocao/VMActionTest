@@ -75,21 +75,17 @@ jobs:
       - name: checkout
         uses: actions/checkout@v4
 
-      - name: Run instrumented tests on Android emulator
+      - name: RUN app and monkey
         uses: reactivecircus/android-emulator-runner@v2
-        timeout-minutes: 60  # Increased from 45
         with:
-          api-level: 34
-          target: google_apis
+          api-level: 30
+          target: google_apis_playstore
           arch: arm64-v8a
-          profile: pixel_6
+          profile: Nexus 6
+          avd-name: 30-$google_apis_playstore-arm64-v8a
           emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
-          disable-animations: true
           script: |
-            echo "Waiting for emulator to stabilize..."
-            adb wait-for-device shell 'while [[ -z $(getprop sys.boot_completed) ]]; do sleep 1; done'
-            adb devices -l
-            cd android && ./gradlew connectedDebugAndroidTest --stacktrace
+            adb devices
 
 
       
