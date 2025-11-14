@@ -6,7 +6,7 @@ on:
 
 jobs:
   armv7:
-    runs-on: macos-latest
+    runs-on: macos-13
     strategy:
       matrix:
         api-level: [30]
