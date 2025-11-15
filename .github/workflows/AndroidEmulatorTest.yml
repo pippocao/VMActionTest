@@ -52,6 +52,14 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: List available system images
+        run: |
+          echo "Available system images:"
+          sdkmanager --list 
 
       - name: Run ARM64 emulator (macOS Apple Silicon)
         uses: reactivecircus/android-emulator-runner@v2
