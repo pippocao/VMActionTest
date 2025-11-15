@@ -48,24 +48,27 @@ jobs:
   
 
   test_arm64_1:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04-arm
     steps:
-      - name: checkout
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Enable KVM
-        run: |
-          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
-          sudo udevadm control --reload-rules
-          sudo udevadm trigger --name-match=kvm
-
-      - name: run tests
+      - name: Run ARM64 emulator (macOS Apple Silicon)
         uses: reactivecircus/android-emulator-runner@v2
         with:
-          api-level: 30
+          # 使用较新的 API Level 提升稳定性
+          api-level: 34
           arch: arm64-v8a
+          # Play Store 版本在 arm64 上不稳定或缺失，改用 google_apis 或默认
+          target: google_apis
+          # 简单命名，避免 $
+          avd-name: api34-arm64
+          # 尽量减少不必要的选项，先尝试不指定 profile；如果需要可再加 Pixel_6
+          emulator-options: -no-snapshot -noaudio -no-boot-anim -gpu angle_indirect
+          boot-timeout: 1200
           script: |
             adb devices
+            # ./gradlew connectedDebugAndroidTest
 
   
 
